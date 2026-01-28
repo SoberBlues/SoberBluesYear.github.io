@@ -3,64 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>尾牙座位查詢系統 - 效能優化版</title>
+<title>尾牙座位查詢系統 - 清晰不透明版</title>
 <style>
   /* 基礎設定 */
   body {
     margin: 0;
     padding: 15px;
     font-family: -apple-system, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-    /* 移除背景模糊，改用半透明疊層達到視覺效果，這對手機效能更好 */
-    background: #f8f9fa url('bg.jpg') center center / cover fixed no-repeat;
+    background-color: #f1f5f9; /* 乾淨的底色 */
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
 
+  /* 背景圖修正：移除透明疊加，確保全螢幕顯示 */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: url('bg.jpg') center center / cover no-repeat;
+    will-change: transform;
+  }
+
   .container { max-width: 800px; margin: auto; position: relative; z-index: 10; }
 
-  /* 搜尋框優化 */
+  /* 搜尋框 */
   .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
   .search-box input { 
     flex: 1; padding: 12px; font-size: 16px; border-radius: 12px; 
     border: 2px solid #ddd; outline: none; background: white; 
-    -webkit-appearance: none; /* 移除 iOS 內建陰影 */
+    -webkit-appearance: none;
   }
   .search-box input:focus { border-color: #f43f5e; }
   .search-box button { 
     padding: 12px 20px; font-size: 16px; border: none; border-radius: 12px; 
     background: #f43f5e; color: #fff; 
     cursor: pointer; font-weight: bold;
-    touch-action: manipulation; /* 減少行動端點擊延遲 */
+    touch-action: manipulation;
   }
   
-  /* 卡片設計 - 移除 backdrop-filter 以提升流暢度 */
+  /* 卡片設計：改為完全不透明白色，移除透明度與模糊 */
   .card { 
-    background: white; /* 改為純色或高不透明度白色 */
+    background: #ffffff; 
     border-radius: 20px; 
     padding: 20px; margin-bottom: 20px; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transform: translateZ(0); /* 強制開啟 GPU 加速 */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateZ(0);
   }
 
   .guest-list { 
     max-height: 250px; overflow-y: auto; border: 1px solid #eee; background: #fff; 
-    -webkit-overflow-scrolling: touch; /* iOS 滾動流暢必備 */
+    -webkit-overflow-scrolling: touch;
   }
 
   .guest-item { 
     padding: 15px; border-bottom: 1px solid #eee; 
     display: flex; justify-content: space-between; align-items: center;
-    touch-action: manipulation;
+    background: #fff;
   }
   
-  /* 座位圖滾動優化 */
+  /* 座位圖滾動 */
   .seating-wrapper {
     width: 100%;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch; /* iOS 滑動順度 */
+    -webkit-overflow-scrolling: touch;
     padding-bottom: 10px;
     display: flex;
-    will-change: transform; /* 預告瀏覽器會有變動 */
   }
 
   .seating { 
@@ -73,15 +84,14 @@
 
   .table { 
     width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
-    border-radius: 50%; border: 1px solid #ddd; background: #fdfdfd; 
-    font-size: 11px; font-weight: bold; color: #666; 
+    border-radius: 50%; border: 1px solid #ddd; background: #ffffff; 
+    font-size: 11px; font-weight: bold; color: #333; 
     text-align: center;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   .table.main { background: #f43f5e; color: white; border: none; }
 
-  /* 高亮效果優化：減少重繪，只使用 transform */
   .table.highlight { 
     background: #3b82f6 !important; color: white !important; 
     transform: scale(1.2); 
@@ -89,7 +99,7 @@
     z-index: 5; 
   }
 
-  .badge { padding: 4px 10px; border-radius: 6px; color: white; font-size: 12px; }
+  .badge { padding: 4px 10px; border-radius: 6px; color: white; font-size: 12px; font-weight: bold; }
   .badge.main { background: #f43f5e; }
   .badge.normal { background: #3b82f6; }
 
@@ -103,7 +113,7 @@
 
 <div class="container">
   <h1 style="text-align:center; margin: 20px 0 5px;">🧧 尾牙座位查詢</h1>
-  <p style="text-align:center; color: #666; margin-bottom: 20px; font-size: 14px;">請輸入「姓名」或「桌號」查詢</p>
+  <p style="text-align:center; color: #333; margin-bottom: 20px; font-size: 14px; font-weight: 500;">請輸入「姓名」或「桌號」查詢</p>
 
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="搜尋姓名或桌號..." onkeypress="if(event.key==='Enter') searchGuest()" enterkeyhint="search">
@@ -117,18 +127,17 @@
     <div class="seating-wrapper">
       <div class="seating" id="seatingLayout"></div>
     </div>
-    <div style="text-align: center; color: #999; font-size: 11px; margin-top: 5px;">左右滑動查看全區 ↔️</div>
+    <div style="text-align: center; color: #666; font-size: 11px; margin-top: 5px;">左右滑動查看全區 ↔️</div>
     
     <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 12px;">
       <span style="display:flex; align-items:center; gap:4px;"><i style="width:12px; height:12px; background:#f43f5e; border-radius:50%;"></i>主桌</span>
-      <span style="display:flex; align-items:center; gap:4px;"><i style="width:12px; height:12px; background:#fff; border:1px solid #ddd; border-radius:50%;"></i>一般</span>
-      <span style="display:flex; align-items:center; gap:4px;"><i style="width:12px; height:12px; background:#3b82f6; border-radius:50%;"></i>位置</span>
+      <span style="display:flex; align-items:center; gap:4px;"><i style="width:12px; height:12px; background:#fff; border:1px solid #ddd; border-radius:50%;"></i>一般/貴賓</span>
+      <span style="display:flex; align-items:center; gap:4px;"><i style="width:12px; height:12px; background:#3b82f6; border-radius:50%;"></i>您的位置</span>
     </div>
   </div>
 </div>
 
 <script>
-// ...（JavaScript 部分保持原本邏輯，但在 highlightTables 加入一點防抖優化）...
 let quests = [];
 const seatingLayoutData = [
   ['04', null, '主桌A', '主桌B', '主桌C', , '35', '42'],
@@ -174,9 +183,9 @@ function searchGuest() {
     const q = results[0];
     container.innerHTML = `
       <div class="card">
-        <b>${q.name}</b> (${q.count}位) <br>
-        <span class="badge ${q.table.includes('主桌')?'main':'normal'}">桌號：${q.table}</span>
-        ${q.note ? `<div style="margin-top:10px; font-size:13px; color:#92400e;">Note: ${q.note}</div>` : ''}
+        <b style="font-size:18px;">${q.name}</b> <small style="color:#666;">(${q.count}位)</small> <br>
+        <div style="margin-top:8px;"><span class="badge ${q.table.includes('主桌')?'main':'normal'}">安排桌次：${q.table}</span></div>
+        ${q.note ? `<div style="margin-top:10px; font-size:13px; color:#92400e; background:#fffbeb; padding:8px; border-radius:8px;">💡 備註：${q.note}</div>` : ''}
       </div>`;
     highlightTables([q.table]);
   } else {
@@ -208,8 +217,7 @@ function highlightTables(targetTables) {
         div.textContent = tableId;
         if (targetTables.includes(tableId)) {
           div.classList.add('highlight');
-          // 延遲滾動確保 DOM 渲染完畢，並使用 block: 'center' 讓手機端看得更清楚
-          setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }), 100);
+          setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }), 150);
         }
       }
       rowDiv.appendChild(div);
