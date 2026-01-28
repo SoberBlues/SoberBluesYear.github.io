@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>尾牙座位查詢系統 - 旗艦版</title>
+<style>
+  /* 基礎設定 */
+  body {
+    margin: 0;
+    padding: 15px;
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255,255,255,0.4)),
+                url('bg.jpg') center center / cover fixed no-repeat;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 { margin: 0; color: #333; }
+  .container { max-width: 800px; margin: auto; position: relative; z-index: 10; }
+
+  /* 搜尋框優化 */
+  .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
+  .search-box input { 
+    flex: 1; padding: 12px; font-size: 16px; border-radius: 12px; 
+    border: 2px solid #ddd; outline: none; background: rgba(255,255,255,0.95); 
+    -webkit-appearance: none;
+  }
+  .search-box input:focus { border-color: #f43f5e; box-shadow: 0 0 8px rgba(244, 63, 94, 0.2); }
+  .search-box button { 
+    padding: 12px 20px; font-size: 16px; border: none; border-radius: 12px; 
+    background: linear-gradient(to right, #f43f5e, #e11d48); color: #fff; 
+    cursor: pointer; transition: 0.3s; font-weight: bold;
+  }
+  .search-box button:active { transform: scale(0.95); }
+  
+  /* 卡片設計 */
+  .card { 
+    background: rgba(255, 255, 255, 0.9); border-radius: 20px; 
+    padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .guest-list { max-height: 300px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; background: #fff; }
+  .guest-item { 
+    padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; 
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .guest-item:last-child { border-bottom: none; }
+  .guest-item:hover { background: #fff1f2; }
+  
+  /* 標籤顏色 - 移除貴賓色系 */
+  .badge { padding: 4px 12px; border-radius: 999px; color: white; font-weight: bold; font-size: 13px; white-space: nowrap; }
+  .badge.main { background: #f43f5e; }
+  .badge.normal { background: #3b82f6; }
+  
+  /* 座位圖滾動優化 */
+  .seating-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: flex-start;
+  }
+  .seating { 
+    display: inline-flex; flex-direction: column; align-items: center; 
+    margin: 10px auto; min-width: max-content;
+  }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .table { 
+    width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; 
+    border-radius: 50%; border: 1px solid #ddd; background: white; 
+    font-size: 11px; font-weight: bold; transition: 0.3s; color: #666; 
+    text-align: center; line-height: 1.1;
+  }
+  .table.main { background: #f43f5e; color: white; border: none; }
+  .table.highlight { 
+    background: #3b82f6 !important; color: white !important; 
+    transform: scale(1.15); box-shadow: 0 0 15px rgba(59, 130, 246, 0.8); 
+    border: 2px solid #fff; z-index: 20; 
+  }
+  .table.empty { border: none; background: transparent; }
+
+  /* 滾動提示字 */
+  .scroll-hint { text-align: center; font-size: 12px; color: #999; margin-bottom: 5px; }
+
+  /* 圖例 - 已移除貴賓項目 */
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px; justify-content: center; font-size: 13px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-circle { width: 14px; height: 14px; border-radius: 50%; }
+  .note { background: #fffbeb; padding: 12px; border-radius: 12px; border-left: 5px solid #fbbf24; margin-top: 15px; font-size: 14px; color: #92400e; }
+
+  /* 下雪特效 CSS */
+  .snowflake {
+    position: fixed; top: -10px; color: white; user-select: none;
+    z-index: 9999; pointer-events: none; animation: fall linear forwards;
+  }
+  @keyframes fall { to { transform: translateY(105vh); } }
+
+  @media (max-width: 480px) {
+    .table { width: 40px; height: 40px; font-size: 10px; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1 style="text-align:center; margin: 20px 0 5px;">🧧 尾牙座位查詢</h1>
+  <p style="text-align:center; color: #555; margin-bottom: 20px; font-size: 15px;">請輸入「姓名」或「桌號 (如：08, 主桌A)」查詢</p>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜尋姓名或桌號..." onkeypress="if(event.key==='Enter') searchGuest()" enterkeyhint="search">
+    <button onclick="searchGuest()">查詢</button>
+  </div>
+
+  <div id="resultContainer"></div>
+
+  <div class="card">
+    <h3 style="text-align:center; margin-bottom:5px;">🗺️ 宴會廳座位圖</h3>
+    <div class="scroll-hint">左右滑動可檢視完整區域 ↔️</div>
+    <div class="seating-wrapper">
+      <div class="seating" id="seatingLayout"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-circle" style="background:#f43f5e;"></div>主桌</div>
+      <div class="legend-item"><div class="legend-circle" style="border:1px solid #ddd; background:#fff;"></div>一般桌次</div>
+      <div class="legend-item"><div class="legend-circle" style="background:#3b82f6;"></div>您的位置</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let quests = [];
+const seatingLayoutData = [
+  ['04', null, '主桌A', '主桌B', '主桌C', , '35', '42'],
+  ['05', '11', '17', , '23', '29', '36', '43'],
+  ['06', '12', '18', , '24', '30', '37', '44'],
+  ['07', '13', '19', , '25', '31', '38', null],
+  ['08', '14', '20', , '26', '32', '39', null],
+  ['09', '15', '21', , '27', '33', '40', '45'],
+  ['10', '16', '22', , '28', '34', '41', null]
+];
+
+async function loadQuestData() {
+  try {
+    const response = await fetch('quests.csv'); 
+    if (!response.ok) throw new Error('找不到 quests.csv');
+    const csvText = await response.text();
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
+    quests = lines.slice(1).map(line => {
+      const columns = line.split(',').map(c => c.trim());
+      return {
+        name: columns[0],
+        table: columns[1],
+        count: parseInt(columns[2]) || 1,
+        note: columns[3] || ''
+      };
+    });
+  } catch (err) {
+    console.error('載入失敗:', err);
+    document.getElementById('resultContainer').innerHTML = `<div class="card" style="color:red; text-align:center;">⚠️ 讀取 CSV 資料失敗。</div>`;
+  }
+}
+
+function searchGuest() {
+  let query = document.getElementById('searchInput').value.trim().toUpperCase();
+  const container = document.getElementById('resultContainer');
+  if (!query) return;
+
+  document.getElementById('searchInput').blur();
+
+  const isNumeric = /^\d+$/.test(query);
+  const isMainTableQuery = query.includes("主桌");
+  
+  let results;
+
+  if (isNumeric) {
+    const formattedTable = query.padStart(2, '0');
+    results = quests.filter(q => q.table === formattedTable || q.table === query);
+  } else if (isMainTableQuery) {
+    results = quests.filter(q => q.table.toUpperCase().includes(query));
+  } else {
+    results = quests.filter(q => q.name.toUpperCase().includes(query));
+  }
+
+  if (results.length === 0) {
+    container.innerHTML = `<div class="card" style="text-align:center;"><p style="font-size:18px; font-weight:bold; color:#666;">查無 "${query}" 的相關資料</p></div>`;
+    highlightTables([]);
+  } else if (results.length === 1 && !isNumeric && !isMainTableQuery) {
+    const q = results[0];
+    container.innerHTML = `
+      <div class="card">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div><span style="color:#888;">賓客姓名：</span><b style="font-size:20px;">${q.name}</b></div>
+          <div><span style="color:#888;">安排桌次：</span><span class="badge ${q.table.includes('主桌')?'main':'normal'}">${q.table}</span></div>
+          <div><span style="color:#888;">預約人數：</span><b>${q.count} 位</b></div>
+          ${q.note ? `<div class="note"><strong>💡 提醒：</strong>${q.note}</div>` : ''}
+        </div>
+      </div>`;
+    highlightTables([q.table]);
+  } else {
+    let displayTitle = isNumeric || isMainTableQuery ? `${query} 名單清單：` : `找到多筆資料，請選擇：`;
+    const totalCount = results.reduce((sum, q) => sum + q.count, 0);
+
+    container.innerHTML = `
+      <div class="card">
+        <h3 style="margin-bottom:12px; color:#f43f5e; font-size:16px;">${displayTitle}</h3>
+        <div class="guest-list">
+          ${results.map(q => `
+            <div class="guest-item" onclick="selectGuest('${q.name}')">
+              <span><b>${q.name}</b> <small style="color:#888;">(${q.count}位)</small></span>
+              <span class="badge ${q.table.includes('主桌')?'main':'normal'}">${q.table}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:10px; text-align:right; font-size:14px; color:#666;">總計人數：<b>${totalCount}</b> 位</div>
+      </div>`;
+    
+    const uniqueTables = [...new Set(results.map(r => r.table))];
+    highlightTables(uniqueTables);
+  }
+}
+
+function selectGuest(name) {
+  document.getElementById('searchInput').value = name;
+  searchGuest();
+}
+
+function highlightTables(targetTables) {
+  const seatingDiv = document.getElementById('seatingLayout');
+  seatingDiv.innerHTML = '';
+  seatingLayoutData.forEach(row => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'row';
+    row.forEach(tableId => {
+      const div = document.createElement('div');
+      div.className = 'table';
+      if (tableId === null) {
+        div.classList.add('empty');
+      } else {
+        div.textContent = tableId;
+        if (tableId.includes('主桌')) div.classList.add('main');
+        
+        if (targetTables.includes(tableId)) {
+            div.classList.add('highlight');
+            setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 300);
+        }
+      }
+      rowDiv.appendChild(div);
+    });
+    seatingDiv.appendChild(rowDiv);
+  });
+}
+
+// 下雪特效
+function createSnowflake() {
+  if (document.querySelectorAll('.snowflake').length > 30) return;
+  const snowflake = document.createElement('div');
+  snowflake.classList.add('snowflake');
+  const icons = ['❄', '❅', '❆', '•'];
+  snowflake.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+  const startX = Math.random() * window.innerWidth;
+  const size = (Math.random() * 12 + 8) + 'px';
+  const duration = (Math.random() * 5 + 5) + 's'; 
+  snowflake.style.left = startX + 'px';
+  snowflake.style.fontSize = size;
+  snowflake.style.opacity = Math.random() * 0.6 + 0.4;
+  snowflake.style.animationDuration = duration;
+  document.body.appendChild(snowflake);
+  setTimeout(() => snowflake.remove(), parseFloat(duration) * 1000);
+}
+
+setInterval(createSnowflake, 500);
+loadQuestData();
+highlightTables([]);
+</script>
+
+</body>
+</html>
