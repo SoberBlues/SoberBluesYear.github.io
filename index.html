@@ -47,7 +47,7 @@
   .guest-item:last-child { border-bottom: none; }
   .guest-item:hover { background: #fff1f2; }
   
-  /* 標籤顏色 - 移除貴賓色系 */
+  /* 標籤顏色 */
   .badge { padding: 4px 12px; border-radius: 999px; color: white; font-weight: bold; font-size: 13px; white-space: nowrap; }
   .badge.main { background: #f43f5e; }
   .badge.normal { background: #3b82f6; }
@@ -83,18 +83,11 @@
   /* 滾動提示字 */
   .scroll-hint { text-align: center; font-size: 12px; color: #999; margin-bottom: 5px; }
 
-  /* 圖例 - 已移除貴賓項目 */
+  /* 圖例 */
   .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px; justify-content: center; font-size: 13px; }
   .legend-item { display: flex; align-items: center; gap: 4px; }
   .legend-circle { width: 14px; height: 14px; border-radius: 50%; }
   .note { background: #fffbeb; padding: 12px; border-radius: 12px; border-left: 5px solid #fbbf24; margin-top: 15px; font-size: 14px; color: #92400e; }
-
-  /* 下雪特效 CSS */
-  .snowflake {
-    position: fixed; top: -10px; color: white; user-select: none;
-    z-index: 9999; pointer-events: none; animation: fall linear forwards;
-  }
-  @keyframes fall { to { transform: translateY(105vh); } }
 
   @media (max-width: 480px) {
     .table { width: 40px; height: 40px; font-size: 10px; }
@@ -252,25 +245,6 @@ function highlightTables(targetTables) {
   });
 }
 
-// 下雪特效
-function createSnowflake() {
-  if (document.querySelectorAll('.snowflake').length > 30) return;
-  const snowflake = document.createElement('div');
-  snowflake.classList.add('snowflake');
-  const icons = ['❄', '❅', '❆', '•'];
-  snowflake.innerHTML = icons[Math.floor(Math.random() * icons.length)];
-  const startX = Math.random() * window.innerWidth;
-  const size = (Math.random() * 12 + 8) + 'px';
-  const duration = (Math.random() * 5 + 5) + 's'; 
-  snowflake.style.left = startX + 'px';
-  snowflake.style.fontSize = size;
-  snowflake.style.opacity = Math.random() * 0.6 + 0.4;
-  snowflake.style.animationDuration = duration;
-  document.body.appendChild(snowflake);
-  setTimeout(() => snowflake.remove(), parseFloat(duration) * 1000);
-}
-
-setInterval(createSnowflake, 500);
 loadQuestData();
 highlightTables([]);
 </script>
